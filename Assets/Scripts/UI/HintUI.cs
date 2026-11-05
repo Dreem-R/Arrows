@@ -12,9 +12,6 @@ public class HintUI : MonoBehaviour
         hintButton.onClick.AddListener(() =>
         {
             HintSystem.Instance.ShowHint();
-            Tween.StopAll(hintButton.transform);
-            hintButton.transform.localScale = Vector3.one;
-            Tween.PunchScale(hintButton.transform, Vector3.one * 0.15f, 0.25f);
         });
     }
 

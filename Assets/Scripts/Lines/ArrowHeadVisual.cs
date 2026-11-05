@@ -9,19 +9,19 @@ public class ArrowHeadVisual : MonoBehaviour
     private const int ACTIVE_SORTING_ORDER = 110;
 
     [SerializeField] private float disabledAlpha = 0.3f;
-    [SerializeField] private float introDuration = 0.35f;
-    [SerializeField] private float introStagger = 0.02f;
     [SerializeField] private Color failColor = new Color(0.1f, 0.1f, 0.1f);
 
     [Header("Hint")]
-    [SerializeField] private float hintScale = 1.5f;
-    [SerializeField] private float hintPulseDuration = 0.4f;
+    [SerializeField] private float hintBeatGap = 0.12f;
+    [SerializeField] private float hintRestDuration = 0.55f;
 
     [Header("Removal")]
     [SerializeField] private ParticleSystem removalBurstPrefab;
 
     private ArrowHead head;
     private SpriteRenderer spriteRenderer;
+    private Sequence introSequence;
+    private Sequence hintSequence;
     private Tween scaleTween;
     private Tween colorTween;
 
@@ -42,13 +42,13 @@ public class ArrowHeadVisual : MonoBehaviour
         spriteRenderer.color = head.Line.Color;
         spriteRenderer.sortingOrder = IDLE_SORTING_ORDER;
 
-        transform.localScale = Vector3.zero;
-        scaleTween = Tween.Scale(transform, Vector3.one, introDuration, Ease.OutBack,
-            startDelay: head.Line.Index * introStagger);
+        PlayIntro();
     }
 
     private void Line_OnStateChanged(object sender, Line.OnStateChangedEventArgs e)
     {
+        StopIntro();
+
         bool isActive = head.Line.ActiveHead == head;
 
         switch (e.newState)
@@ -89,17 +89,52 @@ public class ArrowHeadVisual : MonoBehaviour
 
     private void ArrowHead_OnHintChanged(object sender, System.EventArgs e)
     {
-        scaleTween.Stop();
+        StopIntro();
+
+        if (hintSequence.isAlive)
+        {
+            hintSequence.Stop();
+        }
+
+        transform.localScale = Vector3.one;
 
         if (head.IsHinted)
         {
-            scaleTween = Tween.Scale(transform, Vector3.one * hintScale, hintPulseDuration,
-                Ease.InOutSine, cycles: -1, cycleMode: CycleMode.Yoyo);
+            PlayHintBeats();
         }
-        else
+    }
+
+    // The start head lands as the line begins drawing and the end head lands when the line reaches it
+    private void PlayIntro()
+    {
+        float landDelay = head.IsAtLineStart ? 0f : GameManager.Instance.Settings.levelIntroDuration;
+
+        transform.localScale = Vector3.zero;
+        introSequence = Sequence.Create()
+            .Chain(Tween.Scale(transform, new Vector3(1.35f, 0.65f, 1f), 0.1f, Ease.OutQuad, startDelay: landDelay))
+            .Chain(Tween.Scale(transform, new Vector3(0.85f, 1.2f, 1f), 0.08f, Ease.OutQuad))
+            .Chain(Tween.Scale(transform, Vector3.one, 0.1f, Ease.OutQuad));
+    }
+
+    private void StopIntro()
+    {
+        if (introSequence.isAlive)
         {
+            introSequence.Stop();
             transform.localScale = Vector3.one;
         }
+    }
+
+    private void PlayHintBeats()
+    {
+        hintSequence = Sequence.Create(cycles: -1)
+            .Chain(Tween.Scale(transform, new Vector3(1.45f, 0.7f, 1f), 0.09f, Ease.OutQuad))
+            .Chain(Tween.Scale(transform, new Vector3(0.85f, 1.35f, 1f), 0.09f, Ease.OutQuad))
+            .Chain(Tween.Scale(transform, Vector3.one, 0.1f, Ease.OutQuad))
+            .ChainDelay(hintBeatGap)
+            .Chain(Tween.Scale(transform, new Vector3(1.3f, 0.8f, 1f), 0.08f, Ease.OutQuad))
+            .Chain(Tween.Scale(transform, Vector3.one, 0.1f, Ease.OutQuad))
+            .ChainDelay(hintRestDuration);
     }
 
     private void PlayFailFlash()
@@ -134,6 +169,16 @@ public class ArrowHeadVisual : MonoBehaviour
 
     private void OnDestroy()
     {
+        if (introSequence.isAlive)
+        {
+            introSequence.Stop();
+        }
+
+        if (hintSequence.isAlive)
+        {
+            hintSequence.Stop();
+        }
+
         Tween.StopAll(this);
         Tween.StopAll(transform);
     }

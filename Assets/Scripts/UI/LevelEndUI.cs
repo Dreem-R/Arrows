@@ -16,7 +16,11 @@ public class LevelEndUI : MonoBehaviour
 
     [Tooltip("Wait this long before the win popup, so the last line's removal can be seen.")]
     [SerializeField] private float winPopupDelay = 0.5f;
-    [SerializeField] private float animationDuration = 0.35f;
+    [SerializeField] private float fadeDuration = 0.15f;
+    [SerializeField] private float unfoldWidthDuration = 0.15f;
+    [SerializeField] private float unfoldHeightDuration = 0.35f;
+
+    private Sequence popupSequence;
 
     private void Awake()
     {
@@ -50,21 +54,28 @@ public class LevelEndUI : MonoBehaviour
         Show(LOST_TITLE, 0f);
     }
 
+    // The popup opens out from a thin flat line
     private void Show(string title, float delay)
     {
         titleText.text = title;
         canvasGroup.gameObject.SetActive(true);
         canvasGroup.alpha = 0f;
-        popup.localScale = Vector3.zero;
+        popup.localScale = new Vector3(0f, 0.05f, 1f);
 
-        Tween.Alpha(canvasGroup, 1f, animationDuration, Ease.OutQuad, startDelay: delay);
-        Tween.Scale(popup, Vector3.one, animationDuration, Ease.OutBack, startDelay: delay);
+        Tween.Alpha(canvasGroup, 1f, fadeDuration, Ease.OutQuad, startDelay: delay);
+        popupSequence = Sequence.Create()
+            .Chain(Tween.ScaleX(popup, 1f, unfoldWidthDuration, Ease.OutExpo, startDelay: delay))
+            .Chain(Tween.ScaleY(popup, 1f, unfoldHeightDuration, Ease.OutBack));
     }
 
     private void Hide()
     {
+        if (popupSequence.isAlive)
+        {
+            popupSequence.Stop();
+        }
+
         Tween.StopAll(canvasGroup);
-        Tween.StopAll(popup);
         canvasGroup.gameObject.SetActive(false);
     }
 }

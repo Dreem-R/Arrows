@@ -16,6 +16,7 @@ MonoBehaviour:
   arrowSpeed: 3
   resetDuration: 0.35
   removeDelay: 0.4
+  levelIntroDuration: 0.45
   collisionDistance: 0.28
   tapRadius: 0.5
   samplesPerUnit: 16

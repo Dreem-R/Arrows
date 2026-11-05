@@ -14,6 +14,8 @@ public class GameSettingsSO : ScriptableObject
     [Min(0.01f)] public float resetDuration = 0.35f;
     [Tooltip("Seconds a completed line stays alive so its removal animation can play.")]
     [Min(0f)] public float removeDelay = 0.4f;
+    [Tooltip("Seconds each line takes to draw itself when a level starts.")]
+    [Min(0.01f)] public float levelIntroDuration = 0.45f;
 
     [Header("Collision and input")]
     [Tooltip("Two arrowheads collide when their centres come closer than this.")]

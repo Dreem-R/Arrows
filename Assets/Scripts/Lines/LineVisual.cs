@@ -1,27 +1,27 @@
 using PrimeTween;
 using UnityEngine;
 
-// Draws a line with a LineRenderer: trims it as the head travels, flashes on failure and pulses for hints
+// Draws a line with a LineRenderer: draws itself in on level start, trims as the head travels, flashes on failure and thickens for hints
 [RequireComponent(typeof(Line), typeof(LineRenderer))]
 public class LineVisual : MonoBehaviour
 {
     private const int HINTED_SORTING_ORDER = 90;
 
     [SerializeField] private float width = 0.065f;
-    [SerializeField] private float introDuration = 0.35f;
-    [SerializeField] private float introStagger = 0.02f;
 
     [Header("Failure")]
     [SerializeField] private Color failColor = new Color(0.1f, 0.1f, 0.1f);
 
     [Header("Hint")]
     [SerializeField] private float hintWidthMultiplier = 2.2f;
-    [SerializeField] private float hintPulseDuration = 0.4f;
+    [SerializeField] private float hintWidthDuration = 0.15f;
 
     private Line line;
     private LineRenderer lineRenderer;
     private Vector3[] pointBuffer;
     private int baseSortingOrder;
+    private float introProgress = 1f;
+    private Tween introTween;
     private Tween widthTween;
     private Tween colorTween;
 
@@ -40,17 +40,24 @@ public class LineVisual : MonoBehaviour
         pointBuffer = new Vector3[line.Path.MaxPointCount];
         baseSortingOrder = line.Index;
         lineRenderer.sortingOrder = baseSortingOrder;
+        lineRenderer.widthMultiplier = width;
         SetColor(line.Color);
-        Redraw();
 
-        lineRenderer.widthMultiplier = 0f;
-        widthTween = Tween.Custom(this, 0f, width, introDuration,
-            (visual, value) => visual.lineRenderer.widthMultiplier = value,
-            Ease.OutCubic, startDelay: line.Index * introStagger);
+        SetIntroProgress(0f);
+        introTween = Tween.Custom(this, 0f, 1f, GameManager.Instance.Settings.levelIntroDuration,
+            (visual, value) => visual.SetIntroProgress(value),
+            Ease.InOutSine);
     }
 
     private void Line_OnStateChanged(object sender, Line.OnStateChangedEventArgs e)
     {
+        // A line tapped during the intro skips straight to fully drawn
+        if (introTween.isAlive)
+        {
+            introTween.Stop();
+        }
+        introProgress = 1f;
+
         if (e.newState == Line.State.Resetting)
         {
             colorTween.Stop();
@@ -72,9 +79,9 @@ public class LineVisual : MonoBehaviour
         if (line.IsHinted)
         {
             lineRenderer.sortingOrder = HINTED_SORTING_ORDER;
-            widthTween = Tween.Custom(this, width, width * hintWidthMultiplier, hintPulseDuration,
+            widthTween = Tween.Custom(this, lineRenderer.widthMultiplier, width * hintWidthMultiplier, hintWidthDuration,
                 (visual, value) => visual.lineRenderer.widthMultiplier = value,
-                Ease.InOutSine, cycles: -1, cycleMode: CycleMode.Yoyo);
+                Ease.OutQuad);
         }
         else
         {
@@ -91,9 +98,17 @@ public class LineVisual : MonoBehaviour
         }
     }
 
+    private void SetIntroProgress(float progress)
+    {
+        introProgress = progress;
+        Redraw();
+    }
+
     private void Redraw()
     {
         line.GetVisibleRange(out float fromDistance, out float toDistance);
+        toDistance = Mathf.Min(toDistance, line.Path.Length * introProgress);
+
         int pointCount = line.Path.CopyPoints(fromDistance, toDistance, pointBuffer);
         lineRenderer.positionCount = pointCount;
         lineRenderer.SetPositions(pointBuffer);
