@@ -34,6 +34,8 @@ public class GameManager : MonoBehaviour
     public GameSettingsSO Settings => settings;
     public int Lives { get; private set; }
     public bool IsPlaying => state == State.Playing;
+    public bool HasNextLevel => currentLevelIndex < levelList.Count - 1;
+    public int CurrentLevelNumber => currentLevelIndex + 1;
 
     private void Awake()
     {
@@ -50,6 +52,23 @@ public class GameManager : MonoBehaviour
 
     public void RetryLevel()
     {
+        LoadCurrentLevel();
+    }
+
+    public void NextLevel()
+    {
+        if (!HasNextLevel)
+        {
+            return;
+        }
+
+        currentLevelIndex++;
+        LoadCurrentLevel();
+    }
+
+    public void RestartFromFirstLevel()
+    {
+        currentLevelIndex = 0;
         LoadCurrentLevel();
     }
 
