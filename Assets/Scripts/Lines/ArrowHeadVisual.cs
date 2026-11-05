@@ -14,6 +14,8 @@ public class ArrowHeadVisual : MonoBehaviour
     [Header("Hint")]
     [SerializeField] private float hintBeatGap = 0.12f;
     [SerializeField] private float hintRestDuration = 0.55f;
+    [SerializeField] private float dimmedAlpha = 0.5f;
+    [SerializeField] private float dimDuration = 0.15f;
 
     [Header("Removal")]
     [SerializeField] private ParticleSystem removalBurstPrefab;
@@ -24,6 +26,9 @@ public class ArrowHeadVisual : MonoBehaviour
     private Sequence hintSequence;
     private Tween scaleTween;
     private Tween colorTween;
+    private Tween dimTween;
+    private float stateAlpha = 1f;
+    private float visibility = 1f;
 
     private void Awake()
     {
@@ -38,6 +43,8 @@ public class ArrowHeadVisual : MonoBehaviour
     private void ArrowHead_OnInitialized(object sender, System.EventArgs e)
     {
         head.Line.OnStateChanged += Line_OnStateChanged;
+        head.Line.OnDimChanged += Line_OnDimChanged;
+        head.Line.OnHintChanged += Line_OnHintChanged;
 
         spriteRenderer.color = head.Line.Color;
         spriteRenderer.sortingOrder = IDLE_SORTING_ORDER;
@@ -79,6 +86,30 @@ public class ArrowHeadVisual : MonoBehaviour
             case Line.State.Completed:
                 PlayRemoval();
                 break;
+        }
+    }
+
+    private void Line_OnDimChanged(object sender, System.EventArgs e)
+    {
+        UpdateDimming();
+    }
+
+    private void Line_OnHintChanged(object sender, System.EventArgs e)
+    {
+        UpdateDimming();
+    }
+
+    // On a hinted line only the safe head stays bright, so the unsafe one can't be mistaken for it
+    private void UpdateDimming()
+    {
+        dimTween.Stop();
+
+        bool isUnsafeHintedHead = head.Line.IsHinted && !head.IsHinted;
+        float targetVisibility = head.Line.IsDimmed || isUnsafeHintedHead ? dimmedAlpha : 1f;
+        if (!Mathf.Approximately(visibility, targetVisibility))
+        {
+            dimTween = Tween.Custom(this, visibility, targetVisibility, dimDuration,
+                (visual, value) => visual.SetVisibility(value));
         }
     }
 
@@ -141,7 +172,7 @@ public class ArrowHeadVisual : MonoBehaviour
     {
         colorTween.Stop();
         colorTween = Tween.Custom(this, 1f, 0f, GameManager.Instance.Settings.resetDuration + 0.2f,
-            (visual, value) => visual.spriteRenderer.color = Color.Lerp(visual.head.Line.Color, visual.failColor, value),
+            (visual, value) => visual.SetTint(Color.Lerp(visual.head.Line.Color, visual.failColor, value)),
             Ease.InQuad);
     }
 
@@ -162,8 +193,19 @@ public class ArrowHeadVisual : MonoBehaviour
 
     private void SetAlpha(float alpha)
     {
-        Color color = spriteRenderer.color;
-        color.a = alpha;
+        stateAlpha = alpha;
+        SetTint(spriteRenderer.color);
+    }
+
+    private void SetVisibility(float value)
+    {
+        visibility = value;
+        SetTint(spriteRenderer.color);
+    }
+
+    private void SetTint(Color color)
+    {
+        color.a = stateAlpha * visibility;
         spriteRenderer.color = color;
     }
 

@@ -117,4 +117,6 @@ MonoBehaviour:
   failColor: {r: 0.1, g: 0.1, b: 0.1, a: 1}
   hintBeatGap: 0.12
   hintRestDuration: 0.55
+  dimmedAlpha: 0.5
+  dimDuration: 0.15
   removalBurstPrefab: {fileID: 3215673394202417390, guid: 799a4d64c56f8ee4899a1f6552bd6bbc, type: 3}

@@ -15,15 +15,20 @@ public class LineVisual : MonoBehaviour
     [Header("Hint")]
     [SerializeField] private float hintWidthMultiplier = 2.2f;
     [SerializeField] private float hintWidthDuration = 0.15f;
+    [SerializeField] private float dimmedAlpha = 0.5f;
+    [SerializeField] private float dimDuration = 0.15f;
 
     private Line line;
     private LineRenderer lineRenderer;
     private Vector3[] pointBuffer;
     private int baseSortingOrder;
     private float introProgress = 1f;
+    private Color currentColor;
+    private float visibility = 1f;
     private Tween introTween;
     private Tween widthTween;
     private Tween colorTween;
+    private Tween dimTween;
 
     private void Awake()
     {
@@ -33,6 +38,7 @@ public class LineVisual : MonoBehaviour
         line.OnInitialized += Line_OnInitialized;
         line.OnStateChanged += Line_OnStateChanged;
         line.OnHintChanged += Line_OnHintChanged;
+        line.OnDimChanged += Line_OnDimChanged;
     }
 
     private void Line_OnInitialized(object sender, System.EventArgs e)
@@ -90,6 +96,18 @@ public class LineVisual : MonoBehaviour
         }
     }
 
+    private void Line_OnDimChanged(object sender, System.EventArgs e)
+    {
+        dimTween.Stop();
+
+        float targetVisibility = line.IsDimmed ? dimmedAlpha : 1f;
+        if (!Mathf.Approximately(visibility, targetVisibility))
+        {
+            dimTween = Tween.Custom(this, visibility, targetVisibility, dimDuration,
+                (visual, value) => visual.SetVisibility(value));
+        }
+    }
+
     private void LateUpdate()
     {
         if (line.CurrentState == Line.State.Moving || line.CurrentState == Line.State.Resetting)
@@ -114,8 +132,16 @@ public class LineVisual : MonoBehaviour
         lineRenderer.SetPositions(pointBuffer);
     }
 
+    private void SetVisibility(float value)
+    {
+        visibility = value;
+        SetColor(currentColor);
+    }
+
     private void SetColor(Color color)
     {
+        currentColor = color;
+        color.a *= visibility;
         lineRenderer.startColor = color;
         lineRenderer.endColor = color;
     }

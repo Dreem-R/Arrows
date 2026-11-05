@@ -2,7 +2,7 @@ using System;
 using UnityEngine;
 
 // The gameplay state of one coloured line. It moves one arrowhead along the path and reports
-// what happens through events. It knows nothing about any specific level, drawing or UI
+// what happens through events
 public class Line : MonoBehaviour
 {
     public enum State
@@ -15,6 +15,7 @@ public class Line : MonoBehaviour
 
     public event EventHandler OnInitialized;
     public event EventHandler OnHintChanged;
+    public event EventHandler OnDimChanged;
     public event EventHandler<OnStateChangedEventArgs> OnStateChanged;
     public class OnStateChangedEventArgs : EventArgs
     {
@@ -40,6 +41,7 @@ public class Line : MonoBehaviour
     public ArrowHead ActiveHead { get; private set; }
     public float Travelled => travelled;
     public bool IsHinted { get; private set; }
+    public bool IsDimmed { get; private set; }
     public Vector2 HeadPosition { get; private set; }
     public Vector2 PreviousHeadPosition { get; private set; }
 
@@ -132,6 +134,17 @@ public class Line : MonoBehaviour
         SetHint(false, false);
     }
 
+    public void SetDimmed(bool isDimmed)
+    {
+        if (IsDimmed == isDimmed)
+        {
+            return;
+        }
+
+        IsDimmed = isDimmed;
+        OnDimChanged?.Invoke(this, EventArgs.Empty);
+    }
+
     // The part of the line still visible, as a range of distances from the line's start
     public void GetVisibleRange(out float fromDistance, out float toDistance)
     {
@@ -184,7 +197,7 @@ public class Line : MonoBehaviour
         PreviousHeadPosition = HeadPosition;
         HeadPosition = GetPositionFrom(fromStart, travelled);
 
-        // During a rewind the head still faces the way it was travelling, like a tape playing backwards
+        // During a rewind the head still faces the way it was travelling
         ActiveHead.SetPose(HeadPosition, GetDirectionFrom(fromStart, travelled));
     }
 

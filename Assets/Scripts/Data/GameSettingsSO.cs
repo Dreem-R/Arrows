@@ -1,6 +1,6 @@
 using UnityEngine;
 
-// Rules and tuning shared by every level. Gameplay code never hard-codes these values
+// Rules and tuning shared by every level
 [CreateAssetMenu(menuName = "Arrows/Game Settings")]
 public class GameSettingsSO : ScriptableObject
 {

@@ -4,9 +4,11 @@ using UnityEngine;
 
 // Finds every line that could be completed right now without a collision and highlights one at random
 // It plays the current board forward in a simulation, without touching the real lines
+// A shown hint keeps getting checked, so it never points at a head that has stopped being safe
 public class HintSystem : MonoBehaviour
 {
     private const float SIMULATION_STEP = 1f / 60f;
+    private const float RECHECK_INTERVAL = 0.1f;
 
     public static HintSystem Instance { get; private set; }
 
@@ -48,6 +50,7 @@ public class HintSystem : MonoBehaviour
     }
 
     private Line hintedLine;
+    private float recheckTimer;
 
     private void Awake()
     {
@@ -57,6 +60,21 @@ public class HintSystem : MonoBehaviour
     private void Start()
     {
         LineSelector.Instance.OnLineStarted += LineSelector_OnLineStarted;
+    }
+
+    private void Update()
+    {
+        if (hintedLine == null)
+        {
+            return;
+        }
+
+        recheckTimer -= Time.deltaTime;
+        if (recheckTimer <= 0f)
+        {
+            recheckTimer = RECHECK_INTERVAL;
+            RecheckHint();
+        }
     }
 
     private void LineSelector_OnLineStarted(object sender, EventArgs e)
@@ -83,6 +101,42 @@ public class HintSystem : MonoBehaviour
         LegalLine choice = legalLines[UnityEngine.Random.Range(0, legalLines.Count)];
         hintedLine = choice.line;
         hintedLine.SetHint(choice.startHeadIsSafe, choice.endHeadIsSafe);
+        recheckTimer = RECHECK_INTERVAL;
+        UpdateDimming();
+    }
+
+    private void RecheckHint()
+    {
+        if (!GameManager.Instance.IsPlaying || hintedLine.CurrentState != Line.State.Idle)
+        {
+            ClearHint();
+            return;
+        }
+
+        bool startHeadIsSafe = CanComplete(hintedLine, true);
+        bool endHeadIsSafe = CanComplete(hintedLine, false);
+
+        if (!startHeadIsSafe && !endHeadIsSafe)
+        {
+            ClearHint();
+            return;
+        }
+
+        if (startHeadIsSafe != hintedLine.StartHead.IsHinted || endHeadIsSafe != hintedLine.EndHead.IsHinted)
+        {
+            hintedLine.SetHint(startHeadIsSafe, endHeadIsSafe);
+        }
+
+        UpdateDimming();
+    }
+
+    // Moving heads stay fully visible, since the player needs to see them to avoid a crash
+    private void UpdateDimming()
+    {
+        foreach (Line line in LevelSpawner.Instance.ActiveLines)
+        {
+            line.SetDimmed(line != hintedLine && line.CurrentState == Line.State.Idle);
+        }
     }
 
     public List<LegalLine> FindLegalLines()
@@ -232,5 +286,10 @@ public class HintSystem : MonoBehaviour
         }
 
         hintedLine = null;
+
+        foreach (Line line in LevelSpawner.Instance.ActiveLines)
+        {
+            line.SetDimmed(false);
+        }
     }
 }
