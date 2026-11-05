@@ -204,7 +204,7 @@ public class Line : MonoBehaviour
     private void Complete()
     {
         SetState(State.Completed);
-        Destroy(gameObject, settings.removeDelay);
+        Destroy(gameObject, settings.removeDuration);
     }
 
     private void SetState(State newState)

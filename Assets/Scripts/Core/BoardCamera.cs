@@ -17,10 +17,13 @@ public class BoardCamera : MonoBehaviour
 
     private Camera boardCamera;
     private Vector2Int lastScreenSize;
+    private Vector3 framedPosition;
+    private Sequence shakeSequence;
 
     private void Awake()
     {
         boardCamera = GetComponent<Camera>();
+        framedPosition = transform.position;
     }
 
     private void Start()
@@ -36,7 +39,8 @@ public class BoardCamera : MonoBehaviour
 
     private void CollisionSystem_OnCollision(object sender, CollisionSystem.OnCollisionEventArgs e)
     {
-        Tween.ShakeCamera(boardCamera, shakeStrength, shakeDuration);
+        StopShake();
+        shakeSequence = Tween.ShakeCamera(boardCamera, shakeStrength, shakeDuration);
     }
 
     private void LateUpdate()
@@ -51,7 +55,7 @@ public class BoardCamera : MonoBehaviour
     {
         lastScreenSize = new Vector2Int(Screen.width, Screen.height);
 
-        Tween.StopAll(transform);
+        StopShake();
 
         Bounds bounds = LevelSpawner.Instance.GetLevelBounds();
         float usableHeightShare = 1f - topInset - bottomInset;
@@ -64,6 +68,17 @@ public class BoardCamera : MonoBehaviour
         float verticalOffset = (usableCentre - 0.5f) * size * 2f;
 
         boardCamera.orthographicSize = size;
-        transform.position = new Vector3(bounds.center.x, bounds.center.y - verticalOffset, transform.position.z);
+        framedPosition = new Vector3(bounds.center.x, bounds.center.y - verticalOffset, framedPosition.z);
+        transform.position = framedPosition;
+    }
+
+    // Stopping a shake partway leaves the camera off centre, so it goes back to its framed position
+    private void StopShake()
+    {
+        if (shakeSequence.isAlive)
+        {
+            shakeSequence.Stop();
+            transform.position = framedPosition;
+        }
     }
 }

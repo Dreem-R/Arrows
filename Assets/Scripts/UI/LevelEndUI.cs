@@ -19,8 +19,8 @@ public class LevelEndUI : MonoBehaviour
     [SerializeField] private Button actionButton;
     [SerializeField] private TextMeshProUGUI actionButtonText;
 
-    [Tooltip("Wait this long before the win popup, so the last line's removal can be seen.")]
-    [SerializeField] private float winPopupDelay = 0.5f;
+    [Tooltip("Extra pause between the last line's removal finishing and the win popup appearing.")]
+    [SerializeField] private float winPopupPause = 0.18f;
     [SerializeField] private float fadeDuration = 0.15f;
     [SerializeField] private float unfoldWidthDuration = 0.15f;
     [SerializeField] private float unfoldHeightDuration = 0.35f;
@@ -52,13 +52,15 @@ public class LevelEndUI : MonoBehaviour
 
     private void GameManager_OnLevelWon(object sender, EventArgs e)
     {
+        float delay = GameManager.Instance.Settings.removeDuration + winPopupPause;
+
         if (GameManager.Instance.HasNextLevel)
         {
-            Show(WON_TITLE, NEXT_LABEL, GameManager.Instance.NextLevel, winPopupDelay);
+            Show(WON_TITLE, NEXT_LABEL, GameManager.Instance.NextLevel, delay);
         }
         else
         {
-            Show(WON_TITLE, RESTART_LABEL, GameManager.Instance.RestartFromFirstLevel, winPopupDelay);
+            Show(WON_TITLE, RESTART_LABEL, GameManager.Instance.RestartFromFirstLevel, delay);
         }
     }
 

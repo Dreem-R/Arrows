@@ -9,14 +9,9 @@ public class LineVisual : MonoBehaviour
 
     [SerializeField] private float width = 0.065f;
 
-    [Header("Failure")]
-    [SerializeField] private Color failColor = new Color(0.1f, 0.1f, 0.1f);
-
     [Header("Hint")]
     [SerializeField] private float hintWidthMultiplier = 2.2f;
     [SerializeField] private float hintWidthDuration = 0.15f;
-    [SerializeField] private float dimmedAlpha = 0.5f;
-    [SerializeField] private float dimDuration = 0.15f;
 
     private Line line;
     private LineRenderer lineRenderer;
@@ -67,8 +62,8 @@ public class LineVisual : MonoBehaviour
         if (e.newState == Line.State.Resetting)
         {
             colorTween.Stop();
-            colorTween = Tween.Custom(this, 1f, 0f, GameManager.Instance.Settings.resetDuration + 0.2f,
-                (visual, value) => visual.SetColor(Color.Lerp(visual.line.Color, visual.failColor, value)),
+            colorTween = Tween.Custom(this, 1f, 0f, GameManager.Instance.Settings.failFlashDuration,
+                (visual, value) => visual.SetColor(Color.Lerp(visual.line.Color, GameManager.Instance.Settings.failColor, value)),
                 Ease.InQuad);
         }
 
@@ -100,10 +95,11 @@ public class LineVisual : MonoBehaviour
     {
         dimTween.Stop();
 
-        float targetVisibility = line.IsDimmed ? dimmedAlpha : 1f;
+        GameSettingsSO settings = GameManager.Instance.Settings;
+        float targetVisibility = line.IsDimmed ? settings.dimmedAlpha : 1f;
         if (!Mathf.Approximately(visibility, targetVisibility))
         {
-            dimTween = Tween.Custom(this, visibility, targetVisibility, dimDuration,
+            dimTween = Tween.Custom(this, visibility, targetVisibility, settings.dimDuration,
                 (visual, value) => visual.SetVisibility(value));
         }
     }

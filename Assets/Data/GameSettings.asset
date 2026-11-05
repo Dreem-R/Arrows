@@ -15,8 +15,12 @@ MonoBehaviour:
   startingLives: 3
   arrowSpeed: 3
   resetDuration: 0.35
-  removeDelay: 0.4
+  removeDuration: 0.32
   levelIntroDuration: 0.45
+  failColor: {r: 0.1, g: 0.1, b: 0.1, a: 1}
+  failFlashDuration: 0.55
+  dimmedAlpha: 0.5
+  dimDuration: 0.15
   collisionDistance: 0.28
   tapRadius: 0.5
   samplesPerUnit: 16

@@ -174,8 +174,5 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   width: 0.065
-  failColor: {r: 0.1, g: 0.1, b: 0.1, a: 1}
   hintWidthMultiplier: 2.2
   hintWidthDuration: 0.15
-  dimmedAlpha: 0.5
-  dimDuration: 0.15

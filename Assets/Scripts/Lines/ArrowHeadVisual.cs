@@ -9,13 +9,10 @@ public class ArrowHeadVisual : MonoBehaviour
     private const int ACTIVE_SORTING_ORDER = 110;
 
     [SerializeField] private float disabledAlpha = 0.3f;
-    [SerializeField] private Color failColor = new Color(0.1f, 0.1f, 0.1f);
 
     [Header("Hint")]
     [SerializeField] private float hintBeatGap = 0.12f;
     [SerializeField] private float hintRestDuration = 0.55f;
-    [SerializeField] private float dimmedAlpha = 0.5f;
-    [SerializeField] private float dimDuration = 0.15f;
 
     [Header("Removal")]
     [SerializeField] private ParticleSystem removalBurstPrefab;
@@ -104,11 +101,12 @@ public class ArrowHeadVisual : MonoBehaviour
     {
         dimTween.Stop();
 
+        GameSettingsSO settings = GameManager.Instance.Settings;
         bool isUnsafeHintedHead = head.Line.IsHinted && !head.IsHinted;
-        float targetVisibility = head.Line.IsDimmed || isUnsafeHintedHead ? dimmedAlpha : 1f;
+        float targetVisibility = head.Line.IsDimmed || isUnsafeHintedHead ? settings.dimmedAlpha : 1f;
         if (!Mathf.Approximately(visibility, targetVisibility))
         {
-            dimTween = Tween.Custom(this, visibility, targetVisibility, dimDuration,
+            dimTween = Tween.Custom(this, visibility, targetVisibility, settings.dimDuration,
                 (visual, value) => visual.SetVisibility(value));
         }
     }
@@ -171,8 +169,8 @@ public class ArrowHeadVisual : MonoBehaviour
     private void PlayFailFlash()
     {
         colorTween.Stop();
-        colorTween = Tween.Custom(this, 1f, 0f, GameManager.Instance.Settings.resetDuration + 0.2f,
-            (visual, value) => visual.SetTint(Color.Lerp(visual.head.Line.Color, visual.failColor, value)),
+        colorTween = Tween.Custom(this, 1f, 0f, GameManager.Instance.Settings.failFlashDuration,
+            (visual, value) => visual.SetTint(Color.Lerp(visual.head.Line.Color, GameManager.Instance.Settings.failColor, value)),
             Ease.InQuad);
     }
 
@@ -181,7 +179,7 @@ public class ArrowHeadVisual : MonoBehaviour
         scaleTween.Stop();
         colorTween.Stop();
 
-        scaleTween = Tween.Scale(transform, Vector3.zero, GameManager.Instance.Settings.removeDelay * 0.8f, Ease.InBack);
+        scaleTween = Tween.Scale(transform, Vector3.zero, GameManager.Instance.Settings.removeDuration, Ease.InBack);
 
         if (removalBurstPrefab != null)
         {

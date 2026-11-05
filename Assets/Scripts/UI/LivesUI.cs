@@ -52,12 +52,9 @@ public class LivesUI : MonoBehaviour
 
         for (int i = 0; i < hearts.Count; i++)
         {
-            bool isFull = i < e.lives;
-            bool wasJustLost = !isFull && hearts[i].sprite == fullHeart;
+            hearts[i].sprite = i < e.lives ? fullHeart : emptyHeart;
 
-            hearts[i].sprite = isFull ? fullHeart : emptyHeart;
-
-            if (wasJustLost)
+            if (i == e.lives)
             {
                 PlayHeartLost(hearts[i]);
             }

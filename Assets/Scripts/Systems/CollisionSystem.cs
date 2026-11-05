@@ -21,15 +21,11 @@ public class CollisionSystem : MonoBehaviour
 
     private void LateUpdate()
     {
-        if (!GameManager.Instance.IsPlaying)
-        {
-            return;
-        }
-
         IReadOnlyList<Line> lines = LevelSpawner.Instance.ActiveLines;
         bool idleHeadsBlock = LevelSpawner.Instance.CurrentLevel.stationaryHeadsBlock;
 
-        for (int i = 0; i < lines.Count; i++)
+        // A collision can end the level partway through, so this checks IsPlaying on every pass
+        for (int i = 0; i < lines.Count && GameManager.Instance.IsPlaying; i++)
         {
             Line line = lines[i];
             if (!line.IsMoving)

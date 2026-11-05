@@ -698,7 +698,7 @@ MonoBehaviour:
   titleText: {fileID: 291220547}
   actionButton: {fileID: 2085807707}
   actionButtonText: {fileID: 604059989}
-  winPopupDelay: 0.5
+  winPopupPause: 0.18
   fadeDuration: 0.15
   unfoldWidthDuration: 0.15
   unfoldHeightDuration: 0.35

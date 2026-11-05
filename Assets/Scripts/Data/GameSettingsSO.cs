@@ -12,10 +12,20 @@ public class GameSettingsSO : ScriptableObject
     [Min(0.1f)] public float arrowSpeed = 3f;
     [Tooltip("Seconds a failed arrowhead takes to rewind to its start.")]
     [Min(0.01f)] public float resetDuration = 0.35f;
-    [Tooltip("Seconds a completed line stays alive so its removal animation can play.")]
-    [Min(0f)] public float removeDelay = 0.4f;
+    [Tooltip("Seconds a completed line takes to shrink away. The line is removed when this ends.")]
+    [Min(0.01f)] public float removeDuration = 0.32f;
     [Tooltip("Seconds each line takes to draw itself when a level starts.")]
     [Min(0.01f)] public float levelIntroDuration = 0.45f;
+
+    [Header("Failure")]
+    public Color failColor = new Color(0.1f, 0.1f, 0.1f);
+    [Tooltip("Seconds a failed line takes to fade from the fail color back to its own color.")]
+    [Min(0.01f)] public float failFlashDuration = 0.55f;
+
+    [Header("Hint")]
+    [Tooltip("Opacity of lines and arrowheads faded out while a hint is showing.")]
+    [Range(0f, 1f)] public float dimmedAlpha = 0.5f;
+    [Min(0.01f)] public float dimDuration = 0.15f;
 
     [Header("Collision and input")]
     [Tooltip("Two arrowheads collide when their centres come closer than this.")]
