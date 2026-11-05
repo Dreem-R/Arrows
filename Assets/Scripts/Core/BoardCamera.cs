@@ -1,19 +1,24 @@
 using PrimeTween;
 using UnityEngine;
 
-// Frames any level between the top and bottom UI at any window size, and shakes on a collision
+// Frames any level in the space left between the top and bottom UI at any window size, and shakes on a collision
 [RequireComponent(typeof(Camera))]
 public class BoardCamera : MonoBehaviour
 {
-    [Tooltip("Share of the screen height reserved for the lives at the top.")]
-    [SerializeField, Range(0f, 0.4f)] private float topInset = 0.14f;
-    [Tooltip("Share of the screen height reserved for the hint button at the bottom.")]
-    [SerializeField, Range(0f, 0.4f)] private float bottomInset = 0.14f;
-    [SerializeField] private float padding = 0.5f;
+    private const float MIN_BOARD_SCREEN_SHARE = 0.3f;
+
+    [Tooltip("The lowest UI element at the top of the screen. The board stays below it.")]
+    [SerializeField] private RectTransform topUI;
+    [Tooltip("The highest UI element at the bottom of the screen. The board stays above it.")]
+    [SerializeField] private RectTransform bottomUI;
+    [Tooltip("World units kept clear around the level's lines. This has to cover half an arrowhead too.")]
+    [SerializeField] private float padding = 0.9f;
 
     [Header("Collision shake")]
     [SerializeField] private float shakeStrength = 0.5f;
     [SerializeField] private float shakeDuration = 0.3f;
+
+    private readonly Vector3[] uiCorners = new Vector3[4];
 
     private Camera boardCamera;
     private Vector2Int lastScreenSize;
@@ -58,14 +63,21 @@ public class BoardCamera : MonoBehaviour
         StopShake();
 
         Bounds bounds = LevelSpawner.Instance.GetLevelBounds();
-        float usableHeightShare = 1f - topInset - bottomInset;
 
-        float sizeForHeight = (bounds.size.y + padding * 2f) / (2f * usableHeightShare);
+        // The canvas is screen space overlay, so its world corners are in screen pixels
+        Canvas.ForceUpdateCanvases();
+        topUI.GetWorldCorners(uiCorners);
+        float boardTopShare = uiCorners[0].y / Screen.height;
+        bottomUI.GetWorldCorners(uiCorners);
+        float boardBottomShare = uiCorners[1].y / Screen.height;
+        float boardShare = Mathf.Max(boardTopShare - boardBottomShare, MIN_BOARD_SCREEN_SHARE);
+
+        float sizeForHeight = (bounds.size.y + padding * 2f) / (2f * boardShare);
         float sizeForWidth = (bounds.size.x + padding * 2f) / (2f * boardCamera.aspect);
         float size = Mathf.Max(sizeForHeight, sizeForWidth);
 
-        float usableCentre = bottomInset + usableHeightShare * 0.5f;
-        float verticalOffset = (usableCentre - 0.5f) * size * 2f;
+        float boardCentreShare = boardBottomShare + boardShare * 0.5f;
+        float verticalOffset = (boardCentreShare - 0.5f) * size * 2f;
 
         boardCamera.orthographicSize = size;
         framedPosition = new Vector3(bounds.center.x, bounds.center.y - verticalOffset, framedPosition.z);
