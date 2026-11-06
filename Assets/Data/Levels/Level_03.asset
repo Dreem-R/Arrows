@@ -12,7 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2574534d405048b43be68cdd44fd430a, type: 3}
   m_Name: Level_03
   m_EditorClassIdentifier: 
-  stationaryHeadsBlock: 0
   lines:
   - color: {r: 0.97, g: 0.05, b: 0.1, a: 1}
     spline:

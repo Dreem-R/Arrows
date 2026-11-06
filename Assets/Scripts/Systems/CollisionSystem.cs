@@ -2,10 +2,12 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-// Checks arrowheads against each other once all lines have moved this frame. Line paths are never checked
+// Checks moving arrowheads against moving and stationary arrowheads once all lines have moved this frame. Line paths are never checked
 // It uses plain math rather than physics so that HintSystem can predict collisions with the same rule
 public class CollisionSystem : MonoBehaviour
 {
+    private const float LEAVE_CHECK_STEP = 0.05f;
+
     public static CollisionSystem Instance { get; private set; }
 
     public event EventHandler<OnCollisionEventArgs> OnCollision;
@@ -22,7 +24,6 @@ public class CollisionSystem : MonoBehaviour
     private void LateUpdate()
     {
         IReadOnlyList<Line> lines = LevelSpawner.Instance.ActiveLines;
-        bool idleHeadsBlock = LevelSpawner.Instance.CurrentLevel.stationaryHeadsBlock;
 
         // A collision can end the level partway through, so this checks IsPlaying on every pass
         for (int i = 0; i < lines.Count && GameManager.Instance.IsPlaying; i++)
@@ -35,9 +36,9 @@ public class CollisionSystem : MonoBehaviour
 
             CheckAgainstMovingHeads(line, lines, i + 1);
 
-            if (idleHeadsBlock && line.IsMoving)
+            if (line.IsMoving)
             {
-                CheckAgainstIdleHeads(line, lines);
+                CheckAgainstStationaryHeads(line, lines);
             }
         }
     }
@@ -62,17 +63,16 @@ public class CollisionSystem : MonoBehaviour
         }
     }
 
-    private void CheckAgainstIdleHeads(Line line, IReadOnlyList<Line> lines)
+    private void CheckAgainstStationaryHeads(Line line, IReadOnlyList<Line> lines)
     {
         foreach (Line other in lines)
         {
-            if (other == line || other.CurrentState != Line.State.Idle)
+            if (other == line)
             {
                 continue;
             }
 
-            if (HeadTouchesPoint(line, other.StartHead.transform.position) ||
-                HeadTouchesPoint(line, other.EndHead.transform.position))
+            if (HitsIfStationary(line, other.StartHead) || HitsIfStationary(line, other.EndHead))
             {
                 line.FailMovement();
                 RaiseCollision(line.HeadPosition);
@@ -81,9 +81,33 @@ public class CollisionSystem : MonoBehaviour
         }
     }
 
-    private bool HeadTouchesPoint(Line line, Vector2 point)
+    // A line's active head is checked as a moving head instead, or is rewinding and can't be hit
+    private bool HitsIfStationary(Line line, ArrowHead head)
     {
-        return HeadsTouch(line.PreviousHeadPosition, line.HeadPosition, point, point);
+        return head != head.Line.ActiveHead && HeadTouchesStationary(line, line.IsMovingFromStart, line.PreviousTravelled,
+            line.PreviousHeadPosition, line.HeadPosition, head.HomePosition);
+    }
+
+    public static bool HeadTouchesStationary(Line line, bool fromStart, float previousTravelled, Vector2 from, Vector2 to, Vector2 stationaryHead)
+    {
+        return HeadsTouch(from, to, stationaryHead, stationaryHead) && !IsStillLeavingHead(line, fromStart, previousTravelled, stationaryHead);
+    }
+
+    // Heads can rest touching each other, so one touching a line's start only counts once the line has moved clear of it
+    // The check stops at the start of this step, because a step that begins inside the radius always counts as touching
+    private static bool IsStillLeavingHead(Line line, bool fromStart, float previousTravelled, Vector2 stationaryHead)
+    {
+        float collisionDistance = GameManager.Instance.Settings.collisionDistance;
+
+        for (float distance = 0f; distance < previousTravelled; distance += LEAVE_CHECK_STEP)
+        {
+            if (Vector2.Distance(line.GetPositionFrom(fromStart, distance), stationaryHead) >= collisionDistance)
+            {
+                return false;
+            }
+        }
+
+        return Vector2.Distance(line.GetPositionFrom(fromStart, previousTravelled), stationaryHead) < collisionDistance;
     }
 
     // Whether two heads came within collision distance while each moved in a straight line over one step

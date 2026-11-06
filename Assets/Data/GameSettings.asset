@@ -21,6 +21,6 @@ MonoBehaviour:
   failFlashDuration: 0.55
   dimmedAlpha: 0.5
   dimDuration: 0.15
-  collisionDistance: 0.28
+  collisionDistance: 0.36
   tapRadius: 0.5
   samplesPerUnit: 16

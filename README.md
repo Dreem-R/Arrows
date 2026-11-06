@@ -1,14 +1,14 @@
 # Arrows
 
-A 2D puzzle game made in **Unity 6** as an interview assignment. Each coloured line has an arrowhead at both ends. Tap one and it travels along its line to the other end, removing the line. Clear every line to win, but if two moving arrowheads collide, you lose a life and both lines reset.
+A 2D puzzle game made in **Unity 6** as an interview assignment. Each coloured line has an arrowhead at both ends. Tap one and it travels along its line to the other end, removing the line. Clear every line to win, but if a moving arrowhead hits another arrowhead, you lose a life and the moving line resets. Parked arrowheads can block a line, so the order you clear them in matters.
 
 ## Gameplay
 
 - **Tap an arrowhead** to send it along its line. The part it has covered disappears as it goes.
 - **Start as many lines as you like** at the same time. The opposite head of a moving line is disabled until that line finishes or resets.
-- **Only arrowheads collide.** Lines can cross, merge or overlap freely.
+- **Only arrowheads collide.** Lines can cross, merge or overlap freely, but a moving head crashes into any other head on its way, moving or stationary. If two moving heads collide, both lines reset. If a moving head hits a stationary one, only the moving line resets.
 - **You have 3 lives** per level. Losing them all ends the level.
-- **Hint** picks a random line that's safe to start right now, and only the head that's safe to tap stays bright. Hints are unlimited.
+- **Hint** picks a random removable line, meaning one that can finish right now without a collision. Only the head that's safe to tap stays bright, and blocked lines are never picked. Hints are unlimited.
 
 ## Levels
 
@@ -25,7 +25,7 @@ The assignment asked for one level. I added two more to show that new levels nee
 - **Data-driven levels.** A level is a `LevelSO` asset holding each line's colour and spline. `LevelSpawner` builds the board from it at runtime.
 - **Shared tuning.** Lives, speed, collision distance and animation timings are in one `GameSettingsSO` asset.
 - **Event-driven.** Gameplay raises C# events, and visuals and UI subscribe to them, so `Line` and `LineVisual` stay separate.
-- **Collisions without physics.** `CollisionSystem` checks the closest distance between two heads across each frame, so a slow frame can't let them pass through each other.
+- **Collisions without physics.** `CollisionSystem` checks the closest distance between heads across each frame, so a slow frame can't let them pass through each other. Heads that rest touching a line's start only count once the line has moved clear of them.
 - **Hints that predict collisions.** `HintSystem` plays the board forward in a simulation using the same collision check. It re-checks while a hint is showing, in case a head stops being safe.
 - **Camera framing.** `BoardCamera` measures where the UI is and fits any level in the remaining space, at any window size.
 

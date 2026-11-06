@@ -11,6 +11,7 @@ public class ArrowHead : MonoBehaviour
     public Line Line { get; private set; }
     public bool IsAtLineStart { get; private set; }
     public bool IsHinted { get; private set; }
+    public Vector2 HomePosition => Line.GetPositionFrom(IsAtLineStart, 0f);
 
     public void Initialize(Line line, bool isAtLineStart)
     {

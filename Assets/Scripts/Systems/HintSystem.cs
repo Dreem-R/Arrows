@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-// Finds every line that could be completed right now without a collision and highlights one at random
+// Finds every removable line, meaning one that could be completed right now without a collision, and highlights one at random
 // It plays the current board forward in a simulation, without touching the real lines
 // A shown hint keeps getting checked, so it never points at a head that has stopped being safe
 public class HintSystem : MonoBehaviour
@@ -27,6 +27,7 @@ public class HintSystem : MonoBehaviour
         public Line line;
         public bool fromStart;
         public float travelled;
+        public float previousTravelled;
         public Vector2 previousPosition;
         public Vector2 position;
 
@@ -35,14 +36,17 @@ public class HintSystem : MonoBehaviour
             this.line = line;
             this.fromStart = fromStart;
             this.travelled = travelled;
+            previousTravelled = travelled;
             position = line.GetPositionFrom(fromStart, travelled);
             previousPosition = position;
         }
 
         public bool HasArrived => travelled >= line.Path.Length;
+        public Vector2 OppositeHeadPosition => line.GetPositionFrom(!fromStart, 0f);
 
         public void Step(float distance)
         {
+            previousTravelled = travelled;
             travelled = Mathf.Min(travelled + distance, line.Path.Length);
             previousPosition = position;
             position = line.GetPositionFrom(fromStart, travelled);
@@ -181,9 +185,7 @@ public class HintSystem : MonoBehaviour
             }
         }
 
-        List<Vector2> idleHeadPositions = LevelSpawner.Instance.CurrentLevel.stationaryHeadsBlock
-            ? GetBlockingHeadPositions(lines, candidateLine)
-            : new List<Vector2>();
+        List<Vector2> restingHeads = GetRestingHeadPositions(lines, candidateLine);
 
         float stepDistance = GameManager.Instance.Settings.arrowSpeed * SIMULATION_STEP;
 
@@ -195,34 +197,37 @@ public class HintSystem : MonoBehaviour
                 head.Step(stepDistance);
             }
 
-            if (TouchesAny(candidate, movingHeads) || TouchesAnyPoint(candidate, idleHeadPositions))
+            if (TouchesAny(candidate, movingHeads) || TouchesStationaryHead(candidate, restingHeads, movingHeads))
             {
                 return false;
             }
 
-            RemoveFinishedHeads(movingHeads, idleHeadPositions);
+            RemoveFinishedHeads(movingHeads, restingHeads);
         }
 
         return true;
     }
 
-    // Resetting lines count as idle here, because their heads will be back home almost immediately
-    private List<Vector2> GetBlockingHeadPositions(IReadOnlyList<Line> lines, Line candidateLine)
+    // Resetting lines count as resting here, because their heads will be back home almost immediately
+    private List<Vector2> GetRestingHeadPositions(IReadOnlyList<Line> lines, Line candidateLine)
     {
         List<Vector2> positions = new List<Vector2>();
 
         foreach (Line line in lines)
         {
-            if (line == candidateLine || line.IsMoving)
+            if (line != candidateLine && !line.IsMoving)
             {
-                continue;
+                AddHomePositions(line, positions);
             }
-
-            positions.Add(line.GetPositionFrom(true, 0f));
-            positions.Add(line.GetPositionFrom(false, 0f));
         }
 
         return positions;
+    }
+
+    private void AddHomePositions(Line line, List<Vector2> positions)
+    {
+        positions.Add(line.GetPositionFrom(true, 0f));
+        positions.Add(line.GetPositionFrom(false, 0f));
     }
 
     private bool TouchesAny(SimulatedHead candidate, List<SimulatedHead> movingHeads)
@@ -238,11 +243,20 @@ public class HintSystem : MonoBehaviour
         return false;
     }
 
-    private bool TouchesAnyPoint(SimulatedHead head, List<Vector2> points)
+    // Stationary heads are the resting ones, plus the far end of every line that's moving
+    private bool TouchesStationaryHead(SimulatedHead head, List<Vector2> restingHeads, List<SimulatedHead> movingHeads)
     {
-        foreach (Vector2 point in points)
+        foreach (Vector2 restingHead in restingHeads)
         {
-            if (CollisionSystem.HeadsTouch(head.previousPosition, head.position, point, point))
+            if (HeadTouches(head, restingHead))
+            {
+                return true;
+            }
+        }
+
+        foreach (SimulatedHead other in movingHeads)
+        {
+            if (other != head && other.line != head.line && HeadTouches(head, other.OppositeHeadPosition))
             {
                 return true;
             }
@@ -251,15 +265,29 @@ public class HintSystem : MonoBehaviour
         return false;
     }
 
-    // Takes out heads that arrive or crash into each other, since they can no longer reach the candidate
-    private void RemoveFinishedHeads(List<SimulatedHead> movingHeads, List<Vector2> idleHeadPositions)
+    private bool HeadTouches(SimulatedHead head, Vector2 stationaryHead)
+    {
+        return CollisionSystem.HeadTouchesStationary(head.line, head.fromStart, head.previousTravelled,
+            head.previousPosition, head.position, stationaryHead);
+    }
+
+    // Takes out heads that arrive or crash, since they can no longer reach the candidate
+    // A crashed line goes back to rest, so its heads then block like any other resting line
+    private void RemoveFinishedHeads(List<SimulatedHead> movingHeads, List<Vector2> restingHeads)
     {
         for (int i = movingHeads.Count - 1; i >= 0; i--)
         {
             SimulatedHead head = movingHeads[i];
 
-            if (head.HasArrived || TouchesAnyPoint(head, idleHeadPositions))
+            if (head.HasArrived)
             {
+                movingHeads.RemoveAt(i);
+                continue;
+            }
+
+            if (TouchesStationaryHead(head, restingHeads, movingHeads))
+            {
+                AddHomePositions(head.line, restingHeads);
                 movingHeads.RemoveAt(i);
                 continue;
             }
@@ -269,6 +297,8 @@ public class HintSystem : MonoBehaviour
                 SimulatedHead other = movingHeads[j];
                 if (CollisionSystem.HeadsTouch(head.previousPosition, head.position, other.previousPosition, other.position))
                 {
+                    AddHomePositions(head.line, restingHeads);
+                    AddHomePositions(other.line, restingHeads);
                     movingHeads.RemoveAt(i);
                     movingHeads.RemoveAt(j);
                     i--;

@@ -40,6 +40,7 @@ public class Line : MonoBehaviour
     // The head that is travelling or rewinding. Null while the line is idle
     public ArrowHead ActiveHead { get; private set; }
     public float Travelled => travelled;
+    public float PreviousTravelled { get; private set; }
     public bool IsHinted { get; private set; }
     public bool IsDimmed { get; private set; }
     public Vector2 HeadPosition { get; private set; }
@@ -96,6 +97,7 @@ public class Line : MonoBehaviour
 
         ActiveHead = head;
         travelled = 0f;
+        PreviousTravelled = 0f;
         HeadPosition = GetPositionFrom(IsMovingFromStart, 0f);
         PreviousHeadPosition = HeadPosition;
         SetState(State.Moving);
@@ -167,6 +169,7 @@ public class Line : MonoBehaviour
 
     private void Advance()
     {
+        PreviousTravelled = travelled;
         travelled = Mathf.Min(travelled + settings.arrowSpeed * Time.deltaTime, Path.Length);
         UpdateActiveHead();
 

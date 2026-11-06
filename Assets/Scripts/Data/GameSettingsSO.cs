@@ -29,7 +29,7 @@ public class GameSettingsSO : ScriptableObject
 
     [Header("Collision and input")]
     [Tooltip("Two arrowheads collide when their centres come closer than this.")]
-    [Min(0.01f)] public float collisionDistance = 0.28f;
+    [Min(0.01f)] public float collisionDistance = 0.36f;
     [Tooltip("How far from an arrowhead a tap can land and still select it.")]
     [Min(0.01f)] public float tapRadius = 0.5f;
 

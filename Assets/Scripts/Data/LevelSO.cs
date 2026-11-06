@@ -11,12 +11,9 @@ public class LineData
     public Spline spline = new Spline();
 }
 
-// One level: its lines and its collision setting
+// One level: its lines
 [CreateAssetMenu(menuName = "Arrows/Level")]
 public class LevelSO : ScriptableObject
 {
-    [Tooltip("Off: only moving arrowheads collide. On: idle arrowheads also block moving ones.")]
-    public bool stationaryHeadsBlock;
-
     public List<LineData> lines = new List<LineData>();
 }
